@@ -26,15 +26,27 @@ class LiveSearchService {
       });
 
       const response = await fetch(`https://newsapi.org/v2/everything?${params}`);
+      
+      // Check if response is HTML (error page)
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('text/html')) {
+        logger.error(`NewsAPI returned HTML instead of JSON. Status: ${response.status}, API Key valid: ${!!this.newsApiKey}`);
+        return [];
+      }
+      
       const data = await response.json();
 
       if (!response.ok) {
-        logger.error(`NewsAPI error: ${data.message || 'Unknown error'}`);
-        throw new Error(`NewsAPI error: ${data.message}`);
+        logger.error(`NewsAPI error:`, {
+          status: response.status,
+          message: data.message || 'Unknown error',
+          code: data.code
+        });
+        return []; // Return empty instead of throwing
       }
 
       logger.info(`NewsAPI returned ${data.articles?.length || 0} articles`);
-      return data.articles.map(article => ({
+      return (data.articles || []).map(article => ({
         title: article.title,
         content: article.description + ' ' + (article.content || ''),
         source: article.source.name,
@@ -48,7 +60,10 @@ class LiveSearchService {
         }
       }));
     } catch (error) {
-      logger.error('NewsAPI search failed:', error);
+      logger.error('NewsAPI search failed:', {
+        message: error.message,
+        name: error.name
+      });
       return [];
     }
   }
@@ -60,15 +75,28 @@ class LiveSearchService {
     }
 
     try {
-      logger.info(`Starting Google Search for: ${query}`);
+      // Sanitize and truncate query to avoid "invalid argument" errors
+      // Google Custom Search API has a 2048 character limit for queries
+      const sanitizedQuery = query
+        .trim()
+        .substring(0, 500) // Limit to 500 chars to be safe
+        .replace(/[\n\r\t]+/g, ' ') // Remove newlines and tabs
+        .replace(/\s+/g, ' '); // Normalize whitespace
+      
+      if (!sanitizedQuery) {
+        logger.warn('Empty query after sanitization, skipping Google Search');
+        return [];
+      }
+      
+      logger.info(`Starting Google Search for: ${sanitizedQuery}`);
       logger.info(`Using API Key: ${this.googleApiKey.substring(0, 10)}...`);
       logger.info(`Using Search Engine ID: ${this.googleSearchEngineId}`);
       
       const params = new URLSearchParams({
         key: this.googleApiKey,
         cx: this.googleSearchEngineId,
-        q: query,
-        num: options.limit || 10
+        q: sanitizedQuery,
+        num: Math.min(options.limit || 10, 10) // Max 10 results per query
       });
 
       const url = `https://www.googleapis.com/customsearch/v1?${params}`;
@@ -78,7 +106,13 @@ class LiveSearchService {
       const data = await response.json();
 
       if (!response.ok) {
-        logger.error(`Google Search API error response:`, data);
+        logger.error(`Google Search API error response:`, {
+          status: response.status,
+          statusText: response.statusText,
+          error: data.error,
+          queryLength: sanitizedQuery.length,
+          query: sanitizedQuery.substring(0, 100) + '...'
+        });
         throw new Error(`Google Search API error: ${data.error?.message || 'Unknown error'}`);
       }
 

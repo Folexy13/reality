@@ -3,6 +3,7 @@ const router = express.Router();
 const elasticService = require('../services/elasticService');
 const vertexAIService = require('../services/vertexAIService');
 const cacheService = require('../services/cacheService');
+const antiSleepService = require('../services/antiSleepService');
 
 // Health check endpoint
 router.get('/', async (req, res) => {
@@ -65,6 +66,22 @@ router.get('/cache-stats', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       error: 'Failed to retrieve cache stats',
+      message: error.message
+    });
+  }
+});
+
+// Anti-sleep service status endpoint
+router.get('/anti-sleep', (req, res) => {
+  try {
+    const status = antiSleepService.getStatus();
+    res.json({
+      timestamp: new Date().toISOString(),
+      antiSleep: status
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to retrieve anti-sleep service status',
       message: error.message
     });
   }

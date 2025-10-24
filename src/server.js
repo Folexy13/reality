@@ -15,6 +15,7 @@ const healthRoutes = require('./routes/health');
 const logger = require('./utils/logger');
 const errorHandler = require('./middleware/errorHandler');
 const { validateApiKey } = require('./middleware/auth');
+const antiSleepService = require('./services/antiSleepService');
 
 const app = express();
 const server = createServer(app);
@@ -128,6 +129,11 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   logger.info(`Reality Check AI Backend running on port ${PORT}`);
   logger.info(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Start anti-sleep service in production
+  if (process.env.NODE_ENV === 'production' || process.env.ENABLE_ANTI_SLEEP === 'true') {
+    antiSleepService.start();
+  }
 });
 
 module.exports = { app, io };

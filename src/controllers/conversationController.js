@@ -229,9 +229,13 @@ class ConversationController {
         const topSources = searchResults.results.slice(0, 5);
         conversationalResponse = `I found ${searchResults.total} sources related to your question "${question}". Here are the top findings:
 
-${topSources.map((result, index) => 
-  `${index + 1}. ${result.source.title} (${result.source.source})\n   ${result.source.content.substring(0, 200)}...`
-).join('\n\n')}
+${topSources.map((result, index) => {
+  const title = result.source?.title || 'Unknown Source';
+  const source = result.source?.source || 'N/A';
+  const content = result.source?.content || result.source?.snippet || result.source?.description || 'No content available';
+  const preview = content.length > 200 ? content.substring(0, 200) + '...' : content;
+  return `${index + 1}. ${title} (${source})\n   ${preview}`;
+}).join('\n\n')}
 
 Please note: AI analysis is temporarily limited. I recommend reviewing these sources directly for a complete understanding.`;
       }

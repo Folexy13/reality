@@ -71,6 +71,16 @@ class VertexAIService {
       } catch (error) {
         const isLastModel = i === modelsToTry.length - 1;
         
+        // Log the full error for debugging
+        logger.error(`Model ${modelName} error details:`, {
+          message: error.message,
+          code: error.code,
+          status: error.status,
+          statusCode: error.statusCode,
+          details: error.details || error.error || 'No additional details',
+          stack: error.stack?.split('\n').slice(0, 3).join('\n')
+        });
+        
         if (error.message && (error.message.includes('404') || error.message.includes('NOT_FOUND'))) {
           logger.warn(`Model ${modelName} not available (404)`);
           if (isLastModel) {
@@ -80,10 +90,9 @@ class VertexAIService {
           // Try next model
           continue;
         } else {
-          // Other error (not 404), log it and try next model
-          logger.error(`Model ${modelName} error:`, error.message);
+          // Other error (not 404), try next model
           if (isLastModel) {
-            throw new Error('AI service temporarily unavailable. Please try again later.');
+            throw new Error(`AI service temporarily unavailable: ${error.message || 'Unknown error'}. Please try again later.`);
           }
           continue;
         }
