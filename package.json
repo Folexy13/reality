@@ -1,45 +1,46 @@
 {
-  "name": "reality-check-ai",
+  "name": "reality-check-ai-backend",
   "version": "1.0.0",
-  "description": "AI-Powered Information Navigator for verifying claims and analyzing information",
-  "main": "backend/src/server.js",
+  "description": "Backend API for Reality Check AI-Powered Information Navigator",
+  "main": "src/server.js",
   "scripts": {
-    "dev": "concurrently \"npm run backend:dev\" \"npm run frontend:dev\"",
-    "backend:dev": "cd backend && npm run dev",
-    "frontend:dev": "cd frontend && npm run dev",
-    "build": "npm run backend:build && npm run frontend:build",
-    "backend:build": "cd backend && npm run build",
-    "frontend:build": "cd frontend && npm run build",
-    "start": "npm run backend:start",
-    "backend:start": "cd backend && npm start",
-    "test": "npm run backend:test && npm run frontend:test",
-    "backend:test": "cd backend && npm test",
-    "frontend:test": "cd frontend && npm test",
-    "setup": "npm run install:all && npm run setup:env",
-    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install && cd ..",
-    "setup:env": "cp backend/.env.example backend/.env",
-    "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down",
-    "docker:build": "docker-compose build",
-    "index-data": "cd backend && npm run index-data",
-    "clean": "rm -rf node_modules backend/node_modules frontend/node_modules"
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "jest",
+    "lint": "eslint .",
+    "index-data": "node scripts/dataIndexer.js init"
+  },
+  "dependencies": {
+    "@elastic/elasticsearch": "^8.10.0",
+    "@google-cloud/aiplatform": "^3.14.0",
+    "@google-cloud/vertexai": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^6.10.0",
+    "helmet": "^7.0.0",
+    "joi": "^17.10.2",
+    "morgan": "^1.10.0",
+    "node-fetch": "^3.3.2",
+    "redis": "^4.6.8",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.0",
+    "winston": "^3.10.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.49.0",
+    "jest": "^29.7.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^6.3.3"
   },
   "keywords": [
     "ai",
-    "fact-checking",
     "information-verification",
     "elasticsearch",
-    "vertex-ai",
-    "conversational-ai",
-    "hackathon"
+    "google-cloud",
+    "fact-checking",
+    "conversational-ai"
   ],
   "author": "Reality Check AI Team",
-  "license": "MIT",
-  "devDependencies": {
-    "concurrently": "^8.2.2"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  }
+  "license": "MIT"
 }
