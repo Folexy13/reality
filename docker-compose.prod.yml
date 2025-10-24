@@ -1,0 +1,62 @@
+# Production Docker Compose Configuration
+version: '3.8'
+
+services:
+  elasticsearch:
+    environment:
+      - "ES_JAVA_OPTS=-Xms2g -Xmx2g"
+      - cluster.name=reality-check-production
+    deploy:
+      resources:
+        limits:
+          memory: 4g
+        reservations:
+          memory: 2g
+
+  backend:
+    environment:
+      - NODE_ENV=production
+      - LOG_LEVEL=warn
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 1g
+        reservations:
+          memory: 512m
+    restart: always
+
+  frontend:
+    deploy:
+      resources:
+        limits:
+          memory: 256m
+        reservations:
+          memory: 128m
+    restart: always
+
+  # Production monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: reality-check-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+      - reality-check-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: reality-check-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - reality-check-network
+
+volumes:
+  grafana_data:

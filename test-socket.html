@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Socket.IO Test</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #007bff;
+            background: white;
+        }
+        .success { border-left-color: #28a745; }
+        .error { border-left-color: #dc3545; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Reality Check Socket.IO Test</h1>
+    
+    <div>
+        <button onclick="connectSocket()">Connect</button>
+        <button onclick="disconnectSocket()">Disconnect</button>
+        <button onclick="clearLog()">Clear Log</button>
+    </div>
+    
+    <div>
+        <input type="text" id="questionInput" placeholder="Enter your question..." />
+        <button onclick="askQuestion()">Ask Question</button>
+    </div>
+    
+    <h3>Connection Log:</h3>
+    <div class="log" id="logContainer"></div>
+
+    <script>
+        let socket = null;
+        const conversationId = 'test-' + Date.now();
+        
+        function log(message, type = 'info') {
+            const logContainer = document.getElementById('logContainer');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logContainer.appendChild(entry);
+            logContainer.scrollTop = logContainer.scrollHeight;
+            console.log(message);
+        }
+        
+        function connectSocket() {
+            if (socket) {
+                log('Already connected', 'error');
+                return;
+            }
+            
+            log('Attempting to connect to http://localhost:3001...');
+            
+            socket = io('http://localhost:3001', {
+                transports: ['websocket', 'polling'],
+                timeout: 20000,
+                reconnection: true
+            });
+            
+            socket.on('connect', () => {
+                log('✅ Connected! Socket ID: ' + socket.id, 'success');
+            });
+            
+            socket.on('disconnect', (reason) => {
+                log('❌ Disconnected. Reason: ' + reason, 'error');
+            });
+            
+            socket.on('connect_error', (error) => {
+                log('🔴 Connection Error: ' + error.message, 'error');
+            });
+            
+            socket.on('search-progress', (progress) => {
+                log('📊 Search Progress: ' + progress.stage + ' - ' + progress.message);
+            });
+            
+            socket.on('question-response', (response) => {
+                log('✅ Response received!', 'success');
+                log('Message: ' + (response.message || response.content || 'No content'));
+                if (response.metadata) {
+                    log('Metadata: ' + JSON.stringify(response.metadata, null, 2));
+                }
+            });
+            
+            socket.on('error', (error) => {
+                log('❌ Error: ' + error.message, 'error');
+            });
+        }
+        
+        function disconnectSocket() {
+            if (socket) {
+                socket.disconnect();
+                socket = null;
+                log('Disconnected manually');
+            }
+        }
+        
+        function askQuestion() {
+            if (!socket || !socket.connected) {
+                log('❌ Not connected! Please connect first.', 'error');
+                return;
+            }
+            
+            const question = document.getElementById('questionInput').value;
+            if (!question.trim()) {
+                log('❌ Please enter a question', 'error');
+                return;
+            }
+            
+            log('📤 Sending question: ' + question);
+            socket.emit('ask-question', {
+                question: question,
+                conversationId: conversationId,
+                userId: 'test-user'
+            });
+        }
+        
+        function clearLog() {
+            document.getElementById('logContainer').innerHTML = '';
+        }
+        
+        // Auto-connect on load
+        window.onload = () => {
+            log('Page loaded. Click Connect to start.');
+        };
+    </script>
+</body>
+</html>
