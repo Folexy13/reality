@@ -7,6 +7,10 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 require('dotenv').config();
 
+// Initialize Google Cloud credentials first
+const { initializeGoogleCredentials } = require('./config/googleAuth');
+initializeGoogleCredentials();
+
 const conversationRoutes = require('./routes/conversation');
 const searchRoutes = require('./routes/search');
 const analysisRoutes = require('./routes/analysis');

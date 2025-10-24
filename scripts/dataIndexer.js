@@ -8,9 +8,23 @@ const logger = require('../src/utils/logger');
 
 class DataIndexer {
   constructor() {
-    this.client = new Client({
+    const clientConfig = {
       node: process.env.ELASTICSEARCH_URL || 'http://localhost:9200'
-    });
+    };
+
+    // Add authentication if provided
+    if (process.env.ELASTICSEARCH_API_KEY) {
+      clientConfig.auth = {
+        apiKey: process.env.ELASTICSEARCH_API_KEY
+      };
+    } else if (process.env.ELASTICSEARCH_USERNAME && process.env.ELASTICSEARCH_PASSWORD) {
+      clientConfig.auth = {
+        username: process.env.ELASTICSEARCH_USERNAME,
+        password: process.env.ELASTICSEARCH_PASSWORD
+      };
+    }
+
+    this.client = new Client(clientConfig);
 
     this.indexes = {
       news: 'reality_check_news',
@@ -317,9 +331,6 @@ class DataIndexer {
           body: {
             size: 0,
             aggs: {
-              total_docs: {
-                value_count: { field: '_id' }
-              },
               avg_credibility: {
                 avg: { field: 'credibilityScore' }
               },

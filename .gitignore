@@ -65,6 +65,9 @@ secrets.json
 credentials.json
 *.pem
 *.key
+src/temp/
+backend/temp/
+temp/
 
 # ML / AI artifacts and caches
 data/
