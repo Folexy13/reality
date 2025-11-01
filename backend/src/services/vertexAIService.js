@@ -3,10 +3,24 @@ const logger = require('../utils/logger');
 
 class VertexAIService {
   constructor() {
-    this.vertex_ai = new VertexAI({
-      project: process.env.GOOGLE_CLOUD_PROJECT,
-      location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1'
-    });
+    this.initialized = false;
+    this.vertex_ai = null;
+    
+    // Only initialize if credentials are available
+    if (process.env.GOOGLE_CLOUD_PROJECT && process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      try {
+        this.vertex_ai = new VertexAI({
+          project: process.env.GOOGLE_CLOUD_PROJECT,
+          location: process.env.GOOGLE_CLOUD_LOCATION || 'us-central1'
+        });
+        this.initialized = true;
+      } catch (error) {
+        logger.warn('Vertex AI initialization failed:', error.message);
+        this.initialized = false;
+      }
+    } else {
+      logger.warn('Vertex AI not configured - missing GOOGLE_CLOUD_PROJECT or credentials');
+    }
     // Use the latest available Gemini models (as of Oct 2025)
     // Try newer models first, with fallbacks to older stable versions
     this.primaryModels = [
@@ -24,17 +38,29 @@ class VertexAIService {
   }
 
   async initialize() {
+    if (!this.initialized) {
+      logger.warn('Vertex AI service not available - skipping initialization');
+      return false;
+    }
+    
     try {
       // Test the connection
       await this.generateText('Hello, this is a test.');
       logger.info('Vertex AI service initialized successfully');
+      return true;
     } catch (error) {
-      logger.error('Vertex AI initialization failed:', error);
-      throw error;
+      logger.error('Vertex AI initialization test failed:', error);
+      this.initialized = false;
+      return false;
     }
   }
 
   async generateText(prompt, options = {}) {
+    if (!this.initialized || !this.vertex_ai) {
+      logger.warn('Vertex AI not available - returning fallback response');
+      return 'AI service is currently unavailable. Please analyze the search results manually.';
+    }
+    
     // Try primary models first
     const modelsToTry = [...this.primaryModels, ...this.fallbackModels];
     
@@ -95,9 +121,28 @@ class VertexAIService {
 
   async generateEmbedding(text) {
     // Embedding generation is not critical for search to work
-    // Skip embeddings for now - we'll use text-only search
-    logger.warn('Embedding generation skipped - using text-only search');
-    return null;
+    // Skip embeddings if Vertex AI is not available
+    if (!this.initialized || !this.vertex_ai) {
+      logger.debug('Embedding generation skipped - Vertex AI not available');
+      return null;
+    }
+    
+    try {
+      // Try to generate embeddings if available
+      const model = this.vertex_ai.preview.getGenerativeModel({
+        model: this.embeddingModel
+      });
+      
+      const request = {
+        contents: [{ role: 'user', parts: [{ text: text.substring(0, 1000) }] }]
+      };
+      
+      const response = await model.generateContent(request);
+      return response.response.candidates[0].content.parts[0].text;
+    } catch (error) {
+      logger.debug('Embedding generation failed, using text-only search:', error.message);
+      return null;
+    }
   }
 
   async analyzeCredibility(content, sources) {

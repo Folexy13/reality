@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Backend Test</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+</head>
+<body>
+    <h1>Reality Check AI Backend Test</h1>
+    <div id="status">Connecting...</div>
+    <button onclick="testQuestion()">Test Question</button>
+    <div id="results"></div>
+
+    <script>
+        const socket = io('http://localhost:3001', {
+            transports: ['websocket', 'polling']
+        });
+
+        socket.on('connect', () => {
+            document.getElementById('status').innerHTML = '✅ Connected to backend';
+            console.log('Connected to backend');
+        });
+
+        socket.on('search-progress', (data) => {
+            console.log('Search progress:', data);
+            document.getElementById('results').innerHTML += `<p>Progress: ${data.stage} - ${data.message}</p>`;
+        });
+
+        socket.on('question-response', (data) => {
+            console.log('Response received:', data);
+            document.getElementById('results').innerHTML += `<h3>Response:</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+        });
+
+        socket.on('error', (data) => {
+            console.error('Error:', data);
+            document.getElementById('results').innerHTML += `<p style="color: red;">Error: ${data.message}</p>`;
+        });
+
+        function testQuestion() {
+            document.getElementById('results').innerHTML = '';
+            socket.emit('ask-question', {
+                question: 'Is climate change real?',
+                conversationId: 'test-' + Date.now(),
+                userId: 'test-user'
+            });
+        }
+    </script>
+</body>
+</html>

@@ -14,8 +14,8 @@ RUN npm ci --only=production
 # Copy source code
 COPY . .
 
-# Copy GCP key file from parent directory
-COPY ../gcp-key.json ./gcp-key.json
+# Copy GCP key file (should be in backend directory)
+COPY gcp-key.json ./gcp-key.json
 
 # Create logs directory
 RUN mkdir -p logs

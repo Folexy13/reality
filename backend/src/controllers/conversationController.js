@@ -193,8 +193,8 @@ class ConversationController {
       let credibilityAnalysis;
       try {
         credibilityAnalysis = await vertexAIService.analyzeCredibility(
-          question, 
-          searchResults.results.slice(0, 10).map(r => r.source)
+          question,
+          searchResults.results.slice(0, 10)
         );
       } catch (analysisError) {
         logger.error('Credibility analysis failed, using fallback:', analysisError);
@@ -219,8 +219,12 @@ class ConversationController {
       let conversationalResponse;
       try {
         conversationalResponse = await vertexAIService.generateConversationalResponse(
-          question, 
-          searchResults.results.slice(0, 15),
+          question,
+          searchResults.results.slice(0, 15).map(r => ({
+            source: r,
+            score: r.score || 0,
+            highlights: r.highlights || { content: [] }
+          })),
           { history: conversation.messages.slice(-6) }
         );
       } catch (responseError) {
@@ -229,8 +233,8 @@ class ConversationController {
         const topSources = searchResults.results.slice(0, 5);
         conversationalResponse = `I found ${searchResults.total} sources related to your question "${question}". Here are the top findings:
 
-${topSources.map((result, index) => 
-  `${index + 1}. ${result.source.title} (${result.source.source})\n   ${result.source.content.substring(0, 200)}...`
+${topSources.map((result, index) =>
+  `${index + 1}. ${result.title} (${result.source})\n   ${result.content.substring(0, 200)}...`
 ).join('\n\n')}
 
 Please note: AI analysis is temporarily limited. I recommend reviewing these sources directly for a complete understanding.`;
@@ -263,12 +267,12 @@ Please note: AI analysis is temporarily limited. I recommend reviewing these sou
             confidenceLevel: credibilityAnalysis.confidence_level
           },
           sources: searchResults.results.slice(0, 25).map(result => ({
-            title: result.source.title,
-            source: result.source.source,
-            url: result.source.url,
-            credibilityScore: result.source.credibilityScore,
+            title: result.title,
+            source: result.source,
+            url: result.url,
+            credibilityScore: result.credibilityScore,
             relevanceScore: result.score,
-            publishDate: result.source.publishDate
+            publishDate: result.publishDate
           })),
           analysis: credibilityAnalysis,
           followUpQuestions

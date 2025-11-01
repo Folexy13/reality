@@ -104,11 +104,10 @@ class LiveSearchService {
 
   async searchFactCheckers(query, options = {}) {
     // Search for fact-checking specific terms
-    const factCheckQuery = `${query} fact check OR debunked OR verified OR false OR true`;
-    const factCheckSites = 'site:snopes.com OR site:politifact.com OR site:factcheck.org OR site:reuters.com/fact-check';
-    const enhancedQuery = `${factCheckQuery} ${factCheckSites}`;
-
-    const results = await this.searchGoogle(enhancedQuery, { limit: 10 });
+    // Use a simpler query that combines fact-checking keywords
+    const factCheckQuery = `${query} fact check verified debunked`;
+    
+    const results = await this.searchGoogle(factCheckQuery, { limit: 10 });
     
     return results.map(result => ({
       ...result,
@@ -121,7 +120,8 @@ class LiveSearchService {
 
   async searchGovernment(query, options = {}) {
     // Search government and official sources
-    const govQuery = `${query} site:gov OR site:edu OR site:who.int OR site:cdc.gov OR site:fda.gov OR site:epa.gov`;
+    // Use a simpler query without complex OR operators
+    const govQuery = `${query} government official CDC WHO FDA`;
     
     const results = await this.searchGoogle(govQuery, { limit: 10 });
     
